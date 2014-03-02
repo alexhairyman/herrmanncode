@@ -7,9 +7,18 @@
    also performs a simple test using multiple threads instead of just running serially
 */
 
-import std.digest.md, std.file, std.path, std.stdio, std.concurrency, std.parallelism; // std imports
-import core.thread, core.time, core.sync.mutex;
+import std.digest.md;
+import std.file, std.path, std.stdio, std.concurrency, std.parallelism;
+import core.thread;
+import core.time;
+import core.sync.mutex;
 
+debug(1)
+{
+  debug = l;
+  debug = m;
+  debug = p;
+}
 alias md5t = ubyte[16];
 static 
 {
@@ -27,11 +36,12 @@ static
 
 void tdigest(string path)
 {
+  import std.digest.md;
   try
   {
     MD5 thismd;
     md5t thash;
-    synchronized(iolock) debug(p) writefln("parsing %s", baseName(path));
+    synchronized(iolock) debug(p) writefln("parsing %s", baseName(cast(char[]) path));
     
     synchronized (hashlock) thismd.start();
     synchronized(iolock) thismd.put(cast(ubyte[]) read(path));

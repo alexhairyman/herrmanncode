@@ -1,3 +1,4 @@
 *.o
 !*.d
 code/dbbench/dbbench
+*.userprefs
