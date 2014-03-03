@@ -2,3 +2,4 @@
 !*.d
 code/dbbench/dbbench
 *.userprefs
+.dub

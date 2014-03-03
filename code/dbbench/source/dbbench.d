@@ -9,9 +9,7 @@
 
 import std.digest.md;
 import std.file, std.path, std.stdio, std.concurrency, std.parallelism;
-import core.thread;
-import core.time;
-import core.sync.mutex;
+import core.thread, core.time, core.sync.mutex;
 
 debug(1)
 {
@@ -22,8 +20,8 @@ debug(1)
 alias md5t = ubyte[16];
 static 
 {
-  synchronized Mutex hashlock;
-  synchronized Mutex iolock;
+  Mutex hashlock;
+  Mutex iolock;
   string[] file_paths;
 
   md5t[string] shashes;
@@ -36,24 +34,25 @@ static
 
 void tdigest(string path)
 {
-  import std.digest.md;
-  try
-  {
-    MD5 thismd;
+//  try
+//  {
+    MD5Digest thismd = new MD5Digest();
+//    MD5 thismd;
     md5t thash;
     synchronized(iolock) debug(p) writefln("parsing %s", baseName(cast(char[]) path));
     
-    synchronized (hashlock) thismd.start();
-    synchronized(iolock) thismd.put(cast(ubyte[]) read(path));
+    synchronized (hashlock) { thismd.reset(); }
+    synchronized(hashlock) { thismd.put(cast(ubyte[]) read(path)); }
 
     debug(m) synchronized(iolock) writeln("getting hash now...");
-    synchronized(hashlock) thash = thismd.finish();
+    synchronized(hashlock) { thash = thismd.finish(); }
     debug(m) synchronized(iolock) writefln("hash of %s is %s", baseName(path), toHexString(thash));
     
-    synchronized(hashlock) hashes[path] = thash;
-  }
-  catch (FileException fe) { writefln("can't read %s !", baseName(path)); }
-  catch (SyncException se) { writeln("Sync Exception"); }
+    synchronized(hashlock) { hashes[path] = thash;}
+    debug(m) synchronized(iolock) writefln("finished hashing %s", baseName(path));
+//  }
+//  catch (FileException fe) { writefln("can't read %s !", baseName(path)); }
+//  catch (SyncException se) { writeln("Sync Exception"); }
 //  return;
 }
 
