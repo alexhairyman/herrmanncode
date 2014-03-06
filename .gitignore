@@ -3,3 +3,4 @@
 code/dbbench/dbbench
 *.userprefs
 .dub
+*.html

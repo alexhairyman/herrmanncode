@@ -8,24 +8,29 @@
 */
 
 import std.digest.md;
-import std.file, std.path, std.stdio, std.concurrency, std.parallelism;
+import std.file, std.path, std.stdio, std.parallelism;
 import core.thread, core.time, core.sync.mutex;
+import msgpack;
 
 debug(1)
 {
-  debug = l;
-  debug = m;
-  debug = p;
+//  debug = l; // lock
+//  debug = m; // md5
+//  debug = p; // path
+//  debug = td; // tdigest
 }
+
 alias md5t = ubyte[16];
+__gshared Mutex hashlock;
+__gshared Mutex iolock;
+__gshared md5t[string] hashes;
 static 
 {
-  Mutex hashlock;
-  Mutex iolock;
+//  Mutex hashlock;
   string[] file_paths;
 
   md5t[string] shashes;
-  synchronized md5t[string] hashes;
+//  md5t[string] hashes;
 
   int hashgathered;
   const int threadmax = 3;
@@ -34,32 +39,31 @@ static
 
 void tdigest(string path)
 {
-//  try
-//  {
+  try
+  {
     MD5Digest thismd = new MD5Digest();
-//    MD5 thismd;
     md5t thash;
-    synchronized(iolock) debug(p) writefln("parsing %s", baseName(cast(char[]) path));
     
-    synchronized (hashlock) { thismd.reset(); }
-    synchronized(hashlock) { thismd.put(cast(ubyte[]) read(path)); }
-
-    debug(m) synchronized(iolock) writeln("getting hash now...");
-    synchronized(hashlock) { thash = thismd.finish(); }
+    thismd.reset();
+    debug(td) writefln("reading %s", baseName(path));
+    thismd.put(cast(ubyte[]) read(path));
+    
+    thash = thismd.finish();
+    debug(td) writefln("boohoo");
+    
     debug(m) synchronized(iolock) writefln("hash of %s is %s", baseName(path), toHexString(thash));
-    
     synchronized(hashlock) { hashes[path] = thash;}
-    debug(m) synchronized(iolock) writefln("finished hashing %s", baseName(path));
-//  }
-//  catch (FileException fe) { writefln("can't read %s !", baseName(path)); }
-//  catch (SyncException se) { writeln("Sync Exception"); }
-//  return;
+  }
+  catch (FileException fe) { writefln("can't read %s !", baseName(path)); }
+  catch (SyncException se) { writeln("Sync Exception"); }
+  return;
 }
 
 void main(string[] args)
 {
   hashlock = new Mutex;
   iolock = new Mutex;
+  Mutex diglock = new Mutex();
   writeln("beginning");
   
   synchronized(hashlock)
@@ -85,8 +89,8 @@ void main(string[] args)
     {
       if(d.isFile() && getSize(d.name) < (32 * 1024 * 1024))
       {
-	number++;
-	ifp ~= d.name;
+	      number++;
+	      ifp ~= d.name;
       }
     }
     
@@ -99,18 +103,17 @@ void main(string[] args)
     {
       try
       {
-	md5t thash;
-	debug(p) synchronized(iolock) writefln("parsing %s", baseName(s));
-	serialmd.start();
-	serialmd.put(cast(ubyte[]) read(s));
-	thash = serialmd.finish();
-	debug(m) synchronized(iolock) writefln("hash of %s : %s", baseName(s), toHexString(thash));
-	shashes[s] = thash;
+	      md5t thash;
+//      	debug(p) synchronized(iolock) writefln("parsing %s", baseName(s));
+      	serialmd.start();
+      	serialmd.put(cast(ubyte[]) read(s));
+      	thash = serialmd.finish();
+      	debug(m) synchronized(iolock) writefln("hash of %s : %s", baseName(s), toHexString(thash));
+      	synchronized(hashlock) shashes[s] = thash;
       }
       catch (FileException fe)
       {
-	//writef("\r                                                                                                     "); //yup
-	writef("can't read %s !\n", baseName(s));
+	      writef("can't read %s !\n", baseName(s));
       }
     }
     TickDuration end = TickDuration.currSystemTick() - start;
@@ -118,29 +121,33 @@ void main(string[] args)
 
     writefln("doing md5 sums in parallel with %d threads", threadmax);
 
-    TaskPool tp = new TaskPool();
+    TaskPool tp = new TaskPool(2);
     start = TickDuration.currSystemTick();
     
     ulong numtogo = ifp.length;
-    foreach(string s ; tp.parallel(ifp))
+
+    foreach(string s ; parallel(ifp, 2))
     {
-      numtogo--;
-      debug(p) writefln("spawning process for %s, %d left to go", baseName(s), numtogo);
+      debug(p) synchronized(iolock) writefln("path: %s", s);
       tdigest(s);
+//      auto t = task(&tdigest, s);
+//      tp.put(t);
     }
     tp.finish();
     end = TickDuration.currSystemTick() - start;
-    writeln("\r\ntask parallel should be done");
-    writefln("hashes all gathered, %d hashes in array, took %d milliseconds", hashes.length, end.msecs);
+    writeln("\ntask parallel should be done");
+    writefln("parallel hashes all gathered, %d hashes in array, took %d milliseconds", hashes.length, end.msecs);
 
-    writefln("comparing hash db, serial has %d keys, parallel has %s keys", shashes.keys.length, hashes.keys.length);
-/*
-  foreach(string s ; shashes.keys)
-  {
-    if(shashes[s] != hashes[s])
-      writefln("%s has two different hashes in serial and parallel", baseName(s));
-  }
-*/
+    //writefln("comparing hash db, serial has %d keys, parallel has %s keys", shashes.keys.length, hashes.keys.length);
+    foreach(string s ; shashes.keys)
+    {
+      if(shashes[s] != hashes[s])
+        writefln("%s has two different hashes in serial and parallel", baseName(s));
+      else
+      {
+        debug(p) writefln("serial: %s parallel: %s of %s", toHexString(hashes[s]), toHexString(hashes[s]), baseName(s));
+      }
+    }
   }
   else {writeln("Argument isn't a directory, aborting"); return;}
 }
