@@ -1,0 +1,7 @@
+{
+  "name" : "curses_test",
+  "dependencies" : {"ncurses" : "~master"},
+  "nonlibs" : ["ncursesw", "panelw"],
+  "targetType": "executable"
+
+}
