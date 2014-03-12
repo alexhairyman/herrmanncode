@@ -1,0 +1,15 @@
+{
+  "name" : "dahash",
+  "description" : "A pure D hash database",
+  "nondependencies" : {"msgpack-d" : "~master"},
+  "importPaths" : ["source"],
+  "configurations" : [
+    {
+      "name" : "unittest",
+      "buildOptions" : ["debugMode", "unittests"],
+      "nondflags" : ["-main"],
+      "targetType": "executable"
+    }
+  ]
+
+}
