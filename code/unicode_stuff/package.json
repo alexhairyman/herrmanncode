@@ -1,0 +1,6 @@
+{
+  "name" : "unicode_mapping_maker",
+  "sourceFiles" : ["uni_mapping.d"],
+  "targetType" : "executable",
+  "libs" : ["curl"]
+}

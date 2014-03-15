@@ -5,8 +5,8 @@ import std.getopt; // parsing command line arguments
 import std.zlib; // for decompressing the codepage file
 import std.net.curl; // for downloading additional code pages
 import std.json; // for parsing the config file
-pragma(lib, "curl");
-pragma(lib, "z");
+//pragma(lib, "curl");
+//pragma(lib, "z");
 
 
 void main(string[] args)
@@ -34,7 +34,7 @@ void main(string[] args)
   }
 
   JSONValue json_config = parseJSON(cast(ubyte[]) read(json_config_file));
-  int[string] groups;
+  size_t[string] groups;
   foreach(size_t i, JSONValue tjv; json_config["mappings"])
   {
     groups[tjv["name"].str] = i;
@@ -66,6 +66,7 @@ void main(string[] args)
       {
         debug(json) writefln("complete url: %s", complete_base_url ~ s.str);
         std.file.write("mappings/" ~ s.str ~ ".z", compress(get(complete_base_url ~ s.str), 9) );
+        writefln("downloading %s", complete_base_url ~ s.str);
 //        std.file.write("mappings/" ~ s.str, get(complete_base_url ~ s.str) );
       }
       catch(CurlException e)
@@ -76,7 +77,7 @@ void main(string[] args)
     }
   }
 
-  if(!dont_remove)
+  if(!dont_remove && exists("mappings"))
     rmdirRecurse("mappings");
 
 }
