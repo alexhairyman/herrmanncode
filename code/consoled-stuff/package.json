@@ -1,0 +1,6 @@
+{
+  "name": "consoled-stuff",
+  "importPaths": ["/Users/alexhairyman/app/dlibs/consoled"],
+  "targetType" : "executable",
+  "sourceFiles" : ["consoled1.d"]
+}

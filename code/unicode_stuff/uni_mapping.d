@@ -5,9 +5,45 @@ import std.getopt; // parsing command line arguments
 import std.zlib; // for decompressing the codepage file
 import std.net.curl; // for downloading additional code pages
 import std.json; // for parsing the config file
-//pragma(lib, "curl");
+pragma(lib, "curl");
 //pragma(lib, "z");
 
+class Parser
+{
+private:
+
+  string instring_;
+//  alias ubyte[] reptype;
+  ubyte[][ubyte[]] replaces_; /// this contains all the chars that should be replaced with their unicode counterparts
+
+public:
+
+  this(string input)
+  {
+    this.instring_ = input;
+  }
+
+  void Parse()
+  {
+
+    debug(parse_wholefile) writefln("parsing:\n%s\nnow", this.instring_);
+    string[] lines;
+    string tstr;
+    foreach(char s; instring_)
+    {
+//      debug(parser_foreach) writeln(s);
+      if(s == '\n') {
+	lines ~= tstr;
+	debug(parser_foreach) writefln("[%s] added to tstr", tstr);
+	tstr = [];
+      } else {
+	tstr ~= s;
+      }
+    }
+  }
+
+
+}
 
 void main(string[] args)
 {
@@ -65,9 +101,9 @@ void main(string[] args)
       try 
       {
         debug(json) writefln("complete url: %s", complete_base_url ~ s.str);
-        std.file.write("mappings/" ~ s.str ~ ".z", compress(get(complete_base_url ~ s.str), 9) );
+//        std.file.write("mappings/" ~ s.str ~ ".z", compress(get(complete_base_url ~ s.str), 9) );
         writefln("downloading %s", complete_base_url ~ s.str);
-//        std.file.write("mappings/" ~ s.str, get(complete_base_url ~ s.str) );
+        std.file.write("mappings/" ~ s.str, get(complete_base_url ~ s.str) );
       }
       catch(CurlException e)
       {
@@ -80,4 +116,14 @@ void main(string[] args)
   if(!dont_remove && exists("mappings"))
     rmdirRecurse("mappings");
 
+  debug(m_parser)
+  {
+    writeln("parsing codepage 437");
+    Parser cp437_parser = new Parser(cast(string) std.file.read("mappings/CP437.txt"));
+    cp437_parser.Parse();
+  }
+
 }
+
+debug=m_parser;
+
