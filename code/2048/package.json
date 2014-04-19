@@ -1,0 +1,5 @@
+{
+  "name" : "D2048",
+  "targetType" : "executable",
+  "dependencies" : {"ncurses" : "~master"}
+}
