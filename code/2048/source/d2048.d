@@ -19,12 +19,37 @@ struct Tile
 public:
   int value = 0;
   
+  this (int inval) {this.value = inval;}
   @property int intyhere(){return this.value;}
   alias intyhere this;
   
   string toString() {return sconv.to!string(this.value);}
   int opCall() {return value;}
   void opCall(int val) {this.value = val;}
+  
+  void opOpAssign(string op)(Tile rhs)
+  {
+    static if(op == "+") { this.value += rhs.value;}
+    else if(op == "-") { this.value -= rhs.value;}
+  }
+  
+  void opOpAssign(string op)(int rhs)
+  {
+    static if(op == "+") {this.value += rhs;}
+    else if(op == "-") {this.value -= rhs;}
+  }
+  
+  Tile opBinary(string op)(int rhs)
+  {
+    static if (op == "+") {return Tile(this.value + rhs);}
+    else if(op == "-") {return Tile (this.value - rhs);}
+  }
+  
+  Tile opBinary(string op)(Tile rhs)
+  {
+    static if (op == "+") {return Tile(this.value + rhs.value);}
+    else if(op == "-") {return Tile (this.value - rhs.value);}
+  }
   
   void opAssign(int inval) {this.value = inval;}
   
@@ -54,8 +79,13 @@ unittest
   Tile t2;
   t2 = 8;
   sio.writeln("t2: ", t2);
-  t2 += 2;
+  t2 = t2 + 2;
   sio.writeln("t2 + 2: ", t2);
+  t2 += 4;
+  sio.writeln("t2 += 4: ", t2);
+  t2 -= 3;
+  sio.writeln("t2 -= 3: ", t2);
+  
 }
 
 version(unittest)
