@@ -131,7 +131,7 @@ unittest
 struct TileBoard
 {
 
-  Tile[4][4] tiles;
+  Tile[][] tiles;
 //  Tile[][] tiles = [[0,0,0],[0,0,0],[0,0,0],[0,0,0]];
 //  int[4][4] tiles;
 
@@ -144,37 +144,73 @@ struct TileBoard
 //  {
 //    return tilesin[y][x];
 //  }
-
+  
+  /// Get the biggest X val
+  /// $(RED DON'T TRUST QUITE YET)
+  @property int max_x(){return this.tiles[0].length - 1;}
+  
+  /// Get the biggest Y val
+  /// $(RED DON'T TRUST QUITE YET)
+  @property int max_y(){return this.tiles.length - 1;}
   
   ref Tile GetTileXY (int x, int y)
   {
-    return tiles[tiles.length - y - 1][x];
+//    return tiles[tiles.length - y - 1][x];
+    debug(GetTileXY) sio.writefln("accessing (%d,%d) max_y : %d => %s", x, y, max_y, tiles[max_y - y][x]);
+    return tiles[max_y - y][x];
   }
   
+  /// move in the specified direction
   void Move(Direction d)
   {
+  
+    sio.writefln("starting:\n^####^\n%(%s\n%)\n^####^", this.tiles);
+    debug sio.writefln("max_x: [%s]\nmax_y: [%s]", max_x, max_y);
     if(d == Direction.UP)
     {
-      for(int column = 0; column <= 3; column++)
+      for(int x = 0; x <= max_x; x++)
       {
-        for(int row = 2; row >=0; column--)
+        for(int y = max_y - 1; y >= 0; y--)
         {
-          if (GetTileXY(column, row) == GetTileXY(column, row + 1))
+          debug sio.writefln("going to try comparing (%s,%s) & (%s,%s)", x, y, x, y+1);
+          if (GetTileXY(x, y) == GetTileXY(x, y + 1) && GetTileXY(x,y) != 0)
+          { 
+            debug sio.writefln("%s == %s", GetTileXY(x, y), GetTileXY(x, y + 1));
+            this.GetTileXY(x, y + 1) = GetTileXY(x,y) + 1;
+            sio.writefln("^####^\n%(%s\n%)\n^####^", this.tiles);
+            if(y != 0) 
+            {
+//              debug sio.writefln("%(%s\n%)", [GetTileXY(x, y+1), GetTileXY(x, y), GetTileXY(x, y-1)]);
+              debug sio.writeln("y != 0, so shifting up");
+              this.GetTileXY(x, y) = GetTileXY(x, y - 1);
+              GetTileXY(x, y - 1) = 0;
+            }
+            else 
+            {
+//              debug sio.writefln("%(%s\n%)", [GetTileXY(x, y+1), GetTileXY(x, y)]);
+              debug sio.writeln("y == 0, so setting to 0");
+              this.GetTileXY(x, y) = 0;
+            }
+            sio.writefln("^####^\n%(%s\n%)\n^####^", this.tiles);
+          }
+          else if (GetTileXY(x, y+1) == 0)
           {
-            debug sio.writefln("%d %d", GetTileXY(column, row), GetTileXY(column, row + 1));
+            debug sio.writeln("shifting up, block above is up");
+            this.GetTileXY(x, y+1) = this.GetTileXY(x, y);
+            debug sio.writefln("%s != %s", GetTileXY(x, y), GetTileXY(x, y + 1));
           }
         }
       }
     }
   }
   
-  bool CanMove(byte x, byte y, Direction d)
+  @disable bool CanMove(byte x, byte y, Direction d)
   {
     if( d == Direction.UP )
     {
-      for(int column = 0; column < 4; column++)
+      for(int _y = 0; _y < 4; _y++)
       {
-        for(int row = 0; row < 4; row++)
+        for(int _x = 0; _x < 4; _x++)
         {
         
         }
@@ -184,16 +220,37 @@ struct TileBoard
   }
   
   
-//  void Initialize ()
-//  {
-//    for(int y = 0; y < 4; y++)
-//    {
-//      debug sio.writeln();
-//      for(int x = 0; x < 4; x++)
-//      {
-//        this.tiles[x][y].value = 0;
-//        debug sio.writef("(%d,%d) ", x ,y);
-//      }
-//    }
-//  }
+
+}
+
+
+/// converts from a 2d array of ints into a 2d array of tiles, useful for setting up a test board quickly
+Tile[][] FromInts(int[][] arrayin)
+{
+  Tile[][] yup;
+  yup.length = arrayin.length;
+  foreach(int index, int[] i; arrayin)
+  {
+    yup[index].length = i.length;
+    foreach(int index2, int i2; i)
+    {
+      yup[index][index2] = Tile(i2);
+    }
+  }
+  return yup;
+}
+unittest
+{
+  TileBoard tb1;
+  tb1.tiles = [[0,1,2,0],
+               [2,1,1,0],
+               [2,1,1,0],
+               [0,0,0,0]].FromInts();
+  sio.writefln("%(%s\n%)", tb1.tiles);
+//  sio.writeln(tb1.GetTileXY(1,1));
+//  sio.writeln(tb1.GetTileXY(1,2));
+//  sio.writeln(tb1.GetTileXY(0,0));
+//  sio.writeln(tb1.GetTileXY(2,2));
+  tb1.Move(Direction.UP);
+  sio.writefln("%(%s\n%)", tb1.tiles);
 }
