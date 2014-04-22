@@ -1,0 +1,12 @@
+# My own personal little bits of code
+
+Projects:
+
+- 2048: A recreation of the game 2048
+  - backend: nearly complete
+  - frontend:
+    - curses: this ought to be fun
+    - Allegro: and this ought to be educational
+    - gtk: ?
+- unicode_stuff: Automatically generate mappings and converter for unicode files by downloading from Unicode website
+  - status: it's going, mostly created so I could get at all the juicy CodePage 437 drawing characters
