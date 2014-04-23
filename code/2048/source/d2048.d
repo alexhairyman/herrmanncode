@@ -13,6 +13,7 @@ enum Direction : ubyte
 
 enum HASVALBIT = 0x80_00_00_00u;
 
+//static Tile FromInt(int inval) {Tile t1 = invalt1.value = inval; return t1
 
 struct Tile
 {
@@ -160,48 +161,175 @@ struct TileBoard
     return tiles[max_y - y][x];
   }
   
-  /// move in the specified direction
-  void Move(Direction d)
+  static Tile[] ShiftLine(Tile[] linein, in Direction d)
   {
-  
-    sio.writefln("starting:\n^####^\n%(%s\n%)\n^####^", this.tiles);
-    debug sio.writefln("max_x: [%s]\nmax_y: [%s]", max_x, max_y);
-    if(d == Direction.UP)
+    Tile[] line = linein;
+    if(d == Direction.UP || d == Direction.RIGHT)
     {
-      for(int x = 0; x <= max_x; x++)
+      for(int i = line.length - 2; i >= 0; i--)
       {
-        for(int y = max_y - 1; y >= 0; y--)
+        if(line[i+1] == 0 && line[i] > 0)
         {
-          debug sio.writefln("going to try comparing (%s,%s) & (%s,%s)", x, y, x, y+1);
-          if (GetTileXY(x, y) == GetTileXY(x, y + 1) && GetTileXY(x,y) != 0)
-          { 
-            debug sio.writefln("%s == %s", GetTileXY(x, y), GetTileXY(x, y + 1));
-            this.GetTileXY(x, y + 1) = GetTileXY(x,y) + 1;
-            sio.writefln("^####^\n%(%s\n%)\n^####^", this.tiles);
-            if(y != 0) 
-            {
-//              debug sio.writefln("%(%s\n%)", [GetTileXY(x, y+1), GetTileXY(x, y), GetTileXY(x, y-1)]);
-              debug sio.writeln("y != 0, so shifting up");
-              this.GetTileXY(x, y) = GetTileXY(x, y - 1);
-              GetTileXY(x, y - 1) = 0;
-            }
-            else 
-            {
-//              debug sio.writefln("%(%s\n%)", [GetTileXY(x, y+1), GetTileXY(x, y)]);
-              debug sio.writeln("y == 0, so setting to 0");
-              this.GetTileXY(x, y) = 0;
-            }
-            sio.writefln("^####^\n%(%s\n%)\n^####^", this.tiles);
-          }
-          else if (GetTileXY(x, y+1) == 0)
-          {
-            debug sio.writeln("shifting up, block above is up");
-            this.GetTileXY(x, y+1) = this.GetTileXY(x, y);
-            debug sio.writefln("%s != %s", GetTileXY(x, y), GetTileXY(x, y + 1));
-          }
+          line[i+1] = line[i];
+          line[i] = 0;
+          line = ShiftLine(line, d);
+          
+        }
+      }
+    } else if (d == Direction.DOWN || d == Direction.LEFT)
+    {
+      for(int i = 1 ; i <=  line.length - 1; i++)
+      {
+        if(line[i-1] == 0 && line[i] > 0)
+        {
+          line[i-1] = line[i];
+          line[i] = 0;
+          line = ShiftLine(line, d);
         }
       }
     }
+//    debug(ShiftLine) sio.writefln("SHIFT d: %s [%(%s,%)] => [%(%s,%)]", d, linein, line);
+    return line;
+  }
+  
+  static Tile[] MoveLine(Tile[] linein, in Direction d)
+  {
+  
+    Tile[] line = linein.dup;
+//    debug(MoveLine) 
+    line = ShiftLine(line, d);
+  
+    if(d == Direction.UP || d == Direction.RIGHT)
+    {
+      for(int i = line.length - 2; i >= 0; i--)
+      {
+        if(line[i+1] == line[i] && line[i] > 0)
+        {
+//          debug(MoveLine) sio.writeln("they're the same! combining!");
+          line[i+1] = line[i] + 1;
+          line[i] = 0;
+          line = ShiftLine(line, d);
+        }
+      }
+    } else if (d == Direction.DOWN || d == Direction.LEFT)
+    {
+      for(int i = 1 ; i <=  line.length - 1; i++)
+      {
+        if(line[i-1] == line[i] && line[i] > 0)
+        {
+//          debug(MoveLine) sio.writeln("they're the same! combining!");
+          line[i-1] = line[i] + 1;
+          line[i] = 0;
+          line = ShiftLine(line, d);
+        }
+      }
+    }
+    debug(MoveLine) sio.writefln("MOVE  d: %s [%(%s,%)] => [%(%s,%)]", d, linein, line);
+    return line;
+  }
+  
+  unittest
+  {
+    sio.writeln("Having fun with line shifting");
+    auto lines = [[1,0,0,0],
+                  [1,1,0,0],
+                  [0,1,1,0],
+                  [0,0,1,1],
+                  [0,1,0,1],
+                  [0,0,0,1],
+                  [0,1,1,2],
+                  [2,2,1,1],
+                  [2,3,3,2]];
+                  
+    sio.writeln("shifting right/up");
+    foreach(int[] x; lines)
+    {
+//      sio.writeln("shifting: ", x);
+      sio.writefln("[%(%s,%)] --> [%(%s,%)]", x, MoveLine(FromInts(x), Direction.UP));
+    }
+    sio.writeln("shifting left/down");
+    foreach(int[] x; lines)
+    {
+      //      sio.writeln("shifting: ", x);
+      sio.writefln("[%(%s,%)] --> [%(%s,%)]", x, MoveLine(FromInts(x), Direction.DOWN));
+    }
+  }
+  
+  /// this ought to be interesting
+  void SetCol(int x, Tile[] col)
+  {
+    foreach(int index, Tile[] i; this.tiles)
+    {
+      this.tiles[index][x] = col[index];
+    }
+  }
+  
+  /// little bit trickier than GetRow
+  Tile[] GetCol(int x)
+  {
+    Tile [] temp;
+    foreach_reverse(int index, Tile[] i; this.tiles)
+    {
+      temp ~= i[x];
+    }
+    debug(GetCol) sio.writefln("column = %(%s,%)", temp);
+    return temp;
+  }
+  
+  //easy again
+  void SetRow(int y, Tile[] row)
+  {
+    this.tiles[y] = row;
+  }
+  
+  /// Easy!
+  Tile[] GetRow(int y)
+  {
+    Tile[] temp = this.tiles[y];
+    return temp;
+  }
+
+  void Shift(Direction d)
+  {
+    if(d == Direction.UP || d == Direction.DOWN)
+    {
+      Tile[][] temp;
+      for(int i = 0; i <= max_x; i++)
+      {
+        temp ~= ShiftLine(this.GetCol(i), d);
+      }
+    }
+    if(d == Direction.UP || d == Direction.DOWN)
+    {
+      Tile[][] temp;
+      for(int i = 0; i <= max_y; i++)
+      {
+        temp ~= ShiftLine(this.GetRow(i), d);
+      }
+    }
+  }
+  
+  
+  /// move in the specified direction
+  void Move(Direction d)
+  {
+    Tile[][] temp;
+    if(d == Direction.UP || d == Direction.DOWN)
+    {
+      for(int i = 0; i <= max_x; i++)
+      {
+        this.SetCol(i, MoveLine(this.GetCol(i), d));
+      }
+    }
+    else if(d == Direction.RIGHT || d == Direction.LEFT)
+    {
+      for(int i = 0; i <= max_y; i++)
+      {
+        this.SetRow(i, MoveLine(this.GetRow(i), d));
+      }
+    }
+    
+    this.tiles = temp.dup;
   }
   
   @disable bool CanMove(byte x, byte y, Direction d)
@@ -224,6 +352,16 @@ struct TileBoard
 }
 
 
+Tile[] FromInts(int[] arrayin)
+{
+  Tile[] yup;
+  yup.length = arrayin.length;
+  foreach(int index, int i; arrayin)
+  {
+    yup[index] = Tile(i);
+  }
+  return yup;
+}
 /// converts from a 2d array of ints into a 2d array of tiles, useful for setting up a test board quickly
 Tile[][] FromInts(int[][] arrayin)
 {
@@ -242,15 +380,28 @@ Tile[][] FromInts(int[][] arrayin)
 unittest
 {
   TileBoard tb1;
-  tb1.tiles = [[0,1,2,0],
-               [2,1,1,0],
-               [2,1,1,0],
-               [0,0,0,0]].FromInts();
-  sio.writefln("%(%s\n%)", tb1.tiles);
-//  sio.writeln(tb1.GetTileXY(1,1));
-//  sio.writeln(tb1.GetTileXY(1,2));
-//  sio.writeln(tb1.GetTileXY(0,0));
-//  sio.writeln(tb1.GetTileXY(2,2));
+  int[][][] tileboards = [
+               [
+                [0,0,0,0],
+                [1,2,3,4],
+                [1,1,1,4],
+                [2,2,2,2]
+               ],
+               [
+                [1,1,1,1],
+                [2,2,1,1],
+                [3,3,4,4],
+                [1,2,1,2]
+               ]
+              ];
+  tb1.tiles = [[0,1,2,2],
+               [2,1,1,2],
+               [2,1,1,3],
+               [0,0,0,3]].FromInts();
+  sio.writefln("tiles:\n%(%s\n%)", tb1.tiles);
   tb1.Move(Direction.UP);
-  sio.writefln("%(%s\n%)", tb1.tiles);
+  sio.writefln("tiles moved up:\n%(%s\n%)", tb1.tiles);
+  tb1.Move(Direction.LEFT);
+  sio.writefln("tiles:\n%(%s\n%)", tb1.tiles);
+//  tb1.Shift(Direction.UP);
 }
