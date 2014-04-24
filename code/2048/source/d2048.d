@@ -13,6 +13,8 @@ enum Direction : ubyte
 
 enum HASVALBIT = 0x80_00_00_00u;
 
+alias ptrdiff_t i_t;
+
 //static Tile FromInt(int inval) {Tile t1 = invalt1.value = inval; return t1
 
 struct Tile
@@ -89,11 +91,6 @@ unittest
   
 }
 
-version(unittest)
-{
-  void main(){}
-}
-
 //int GetFaceVal(int i)
 //{
 //  return smath.pow(2,i);
@@ -133,6 +130,13 @@ struct TileBoard
 {
 
   Tile[][] tiles;
+  this(i_t sidesize)
+  {
+    tiles.length = sidesize;
+    foreach(Tile[] t; tiles)
+    {t.length = sidesize;}
+  }
+  
 //  Tile[][] tiles = [[0,0,0],[0,0,0],[0,0,0],[0,0,0]];
 //  int[4][4] tiles;
 
@@ -145,14 +149,13 @@ struct TileBoard
 //  {
 //    return tilesin[y][x];
 //  }
-  
   /// Get the biggest X val
   /// $(RED DON'T TRUST QUITE YET)
-  @property int max_x(){return this.tiles[0].length - 1;}
+  @property i_t max_x(){return this.tiles[0].length - 1;}
   
   /// Get the biggest Y val
   /// $(RED DON'T TRUST QUITE YET)
-  @property int max_y(){return this.tiles.length - 1;}
+  @property i_t max_y(){return this.tiles.length - 1;}
   
   ref Tile GetTileXY (int x, int y)
   {
@@ -163,10 +166,10 @@ struct TileBoard
   
   static Tile[] ShiftLine(Tile[] linein, in Direction d)
   {
-    Tile[] line = linein;
+    Tile[] line = linein.dup;
     if(d == Direction.UP || d == Direction.RIGHT)
     {
-      for(int i = line.length - 2; i >= 0; i--)
+      for(i_t i = line.length - 2; i >= 0; i--)
       {
         if(line[i+1] == 0 && line[i] > 0)
         {
@@ -178,7 +181,7 @@ struct TileBoard
       }
     } else if (d == Direction.DOWN || d == Direction.LEFT)
     {
-      for(int i = 1 ; i <=  line.length - 1; i++)
+      for(i_t i = 1 ; i <=  line.length - 1; i++)
       {
         if(line[i-1] == 0 && line[i] > 0)
         {
@@ -188,7 +191,7 @@ struct TileBoard
         }
       }
     }
-//    debug(ShiftLine) sio.writefln("SHIFT d: %s [%(%s,%)] => [%(%s,%)]", d, linein, line);
+    debug(ShiftLine) sio.writefln("SHIFT d: %s [%(%s,%)] => [%(%s,%)]", d, linein, line);
     return line;
   }
   
@@ -201,7 +204,8 @@ struct TileBoard
   
     if(d == Direction.UP || d == Direction.RIGHT)
     {
-      for(int i = line.length - 2; i >= 0; i--)
+      if(d == Direction.UP) line.reverse;
+      for(i_t i = line.length - 2; i >= 0; i--)
       {
         if(line[i+1] == line[i] && line[i] > 0)
         {
@@ -213,7 +217,7 @@ struct TileBoard
       }
     } else if (d == Direction.DOWN || d == Direction.LEFT)
     {
-      for(int i = 1 ; i <=  line.length - 1; i++)
+      for(i_t i = 1 ; i <=  line.length - 1; i++)
       {
         if(line[i-1] == line[i] && line[i] > 0)
         {
@@ -241,13 +245,13 @@ struct TileBoard
                   [2,2,1,1],
                   [2,3,3,2]];
                   
-    sio.writeln("shifting right/up");
+    sio.writeln("moving right/up");
     foreach(int[] x; lines)
     {
 //      sio.writeln("shifting: ", x);
       sio.writefln("[%(%s,%)] --> [%(%s,%)]", x, MoveLine(FromInts(x), Direction.UP));
     }
-    sio.writeln("shifting left/down");
+    sio.writeln("moving left/down");
     foreach(int[] x; lines)
     {
       //      sio.writeln("shifting: ", x);
@@ -258,9 +262,9 @@ struct TileBoard
   /// this ought to be interesting
   void SetCol(int x, Tile[] col)
   {
-    foreach(int index, Tile[] i; this.tiles)
+    foreach(i_t index, Tile[] i; this.tiles)
     {
-      this.tiles[index][x] = col[index];
+      this.tiles[index][x] = col[col.length - 1 - index];
     }
   }
   
@@ -268,12 +272,12 @@ struct TileBoard
   Tile[] GetCol(int x)
   {
     Tile [] temp;
-    foreach_reverse(int index, Tile[] i; this.tiles)
+    foreach(i_t index, Tile[] i; this.tiles)
     {
       temp ~= i[x];
     }
     debug(GetCol) sio.writefln("column = %(%s,%)", temp);
-    return temp;
+    return temp.dup;
   }
   
   //easy again
@@ -285,7 +289,7 @@ struct TileBoard
   /// Easy!
   Tile[] GetRow(int y)
   {
-    Tile[] temp = this.tiles[y];
+    Tile[] temp = this.tiles[y].dup;
     return temp;
   }
 
@@ -313,41 +317,28 @@ struct TileBoard
   /// move in the specified direction
   void Move(Direction d)
   {
-    Tile[][] temp;
+//    Tile[][] temp;
     if(d == Direction.UP || d == Direction.DOWN)
     {
       for(int i = 0; i <= max_x; i++)
       {
+        debug(Move) sio.writefln("moving %(%s,%)", this.GetCol(i));
         this.SetCol(i, MoveLine(this.GetCol(i), d));
+        debug(Move) sio.writefln("moved %(%s,%)", this.GetCol(i));
       }
     }
     else if(d == Direction.RIGHT || d == Direction.LEFT)
     {
       for(int i = 0; i <= max_y; i++)
       {
+        debug(Move) sio.writefln("moving %(%s,%)", this.GetRow(i));
         this.SetRow(i, MoveLine(this.GetRow(i), d));
+        debug(Move) sio.writefln("moved %(%s,%)", this.GetRow(i));
       }
     }
     
-    this.tiles = temp.dup;
-  }
-  
-  @disable bool CanMove(byte x, byte y, Direction d)
-  {
-    if( d == Direction.UP )
-    {
-      for(int _y = 0; _y < 4; _y++)
-      {
-        for(int _x = 0; _x < 4; _x++)
-        {
-        
-        }
-      }
-    }
-    return false;
-  }
-  
-  
+//    this.tiles = temp.dup;
+  } 
 
 }
 
@@ -356,7 +347,7 @@ Tile[] FromInts(int[] arrayin)
 {
   Tile[] yup;
   yup.length = arrayin.length;
-  foreach(int index, int i; arrayin)
+  foreach(i_t index, int i; arrayin)
   {
     yup[index] = Tile(i);
   }
@@ -398,10 +389,26 @@ unittest
                [2,1,1,2],
                [2,1,1,3],
                [0,0,0,3]].FromInts();
-  sio.writefln("tiles:\n%(%s\n%)", tb1.tiles);
+               
+  void WriteChange(string msg, TileBoard inboard = tb1)
+  {
+    sio.writefln("tiles %s :\n%(%s\n%)", msg, inboard.tiles);
+  }
+  WriteChange("Begin");
   tb1.Move(Direction.UP);
-  sio.writefln("tiles moved up:\n%(%s\n%)", tb1.tiles);
+  WriteChange("UP");
   tb1.Move(Direction.LEFT);
-  sio.writefln("tiles:\n%(%s\n%)", tb1.tiles);
+  WriteChange("LEFT");
+  tb1.Move(Direction.RIGHT);
+  WriteChange("RIGHT");
+  tb1.GetTileXY(0,2) = 1;
+  WriteChange("1 added");
+  tb1.Move(Direction.RIGHT);
+  WriteChange("RIGHT");
+  tb1.Move(Direction.RIGHT);
+  tb1.Move(Direction.RIGHT);
+  WriteChange("RIGHT twice");
+  tb1.Move(Direction.DOWN);
+  WriteChange("DOWN");
 //  tb1.Shift(Direction.UP);
 }
