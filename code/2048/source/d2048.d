@@ -163,6 +163,8 @@ struct TileBoard
     debug(GetTileXY) sio.writefln("accessing (%d,%d) max_y : %d => %s", x, y, max_y, tiles[max_y - y][x]);
     return tiles[max_y - y][x];
   }
+
+  
   
   static Tile[] ShiftLine(Tile[] linein, in Direction d)
   {

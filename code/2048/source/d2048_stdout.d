@@ -9,7 +9,7 @@ import strt = std.traits;
 __gshared bool action_done = false;
 string GetInput()
 {
-  string temp = sio.stdin.readln('\n');
+  string temp = sio.stdin.readln()[0..$-1]; // get rid of the last \n
   return temp;
 }
 
@@ -44,14 +44,26 @@ void BeginGame(UIs ui_in)
   
 }
 
+string[] commands = ["quit", "up", "right", "down", "left"];
 
 void BeginStdOutGame()
 {
+  TileBoard tb = TileBoard(4);
+
+
   string inputstring;
+  bool run = true;
   do
   {
     inputstring = GetInput();
-  } while (inputstring != "quit");
+    
+    if(inputstring == "quit")
+      run = false;
+    else if(inputstring == "up")
+    
+    
+    debug(Game) sio.writeln(inputstring);
+  } while (run);
   
 }
 
@@ -96,12 +108,10 @@ void main(string[] argv)
       action_done = true;
       BeginStdOutGame();
     }
-  }
-
-  
-  else
-  {
-    sio.writeln("use -h to get help");
+    else
+    {
+      sio.writeln("use -h to get help");
+    }
   }
 }
 
