@@ -1,6 +1,30 @@
 {
   "name" : "d2048",
-  "targetType" : "executable",
-  "dependencies" : {"ncurses" : "~master"}
+  "targetType" : "library",
+  "subPackages" : [
+    {
+      "name" : "stdout",
+      "sourceFiles" : ["frontends/d2048_stdout.d"]
+    },
+    {
+      "name": "curses",
+      "dependencies" : {"ncurses" : "~master"},
+      "sourceFiles" : ["frontends/d2048_ncurses.d"]
+    },
+    {
+      "name": "gtk",
+      "dependencies" : {"gtkd" : "~master"},
+      "sourceFiles" : ["frontends/d2048_gtk.d"]
+    },
+    {
+      "name": "dallegro",
+      "targetType" : "executable",
+      "libs" : ["allegro", "allegro_font", "allegro_primitives", "allegro_image"],
+      "dependencies" : {"allegro5": "~master"},
+      "sourceFiles" : ["frontends/d2048_allegro.d"]
+
+    }
+
+  ]
   
 }
