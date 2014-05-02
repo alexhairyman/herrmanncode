@@ -1,0 +1,26 @@
+baseurl: "http://www.unicode.org/Public/MAPPINGS/"
+mappings:
+  - 
+    name: MICROSOFT-PC
+    base : "VENDORS/MICSFT/PC/"
+    files:
+      - CP437.TXT
+      - CP737.TXT
+      - CP775.TXT
+      - CP850.TXT
+      - CP852.TXT
+      - CP855.TXT
+      - CP857.TXT
+      - CP860.TXT
+      - CP861.TXT
+      - CP862.TXT
+      - CP863.TXT
+      - CP864.TXT
+      - CP865.TXT
+      - CP866.TXT
+      - CP869.TXT
+      - CP874.TXT
+    comment: |
+      Microsoft codepage fonts
+      Useful for CP437, which is all the juicy
+      ASCII characters
