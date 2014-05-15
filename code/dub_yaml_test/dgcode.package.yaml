@@ -1,0 +1,17 @@
+name: "dgcode"
+targetType : "executable"
+targetName : "parse"
+targetPath : "build"
+dependencies:
+  yaml: "~master"
+subPackages :
+  - name: "GTKd"
+    versions : ["GTKd", 'single quote']
+    dependencies : 
+      gtk-d: "~master"
+  - name : "TKd"
+    versions : ["TKd"]
+    dependencies : 
+      tkd: "~master"
+      notadep: non quoted
+

@@ -1,28 +1,43 @@
 {
   "name" : "d2048",
   "targetType" : "library",
-  "subPackages" : [
+  "sourcePaths" : ["source"],
+  "configurations" : [
+    {
+      "name" : "unittest",
+      "targetType" : "executable",
+      "versions" : ["unittest_main"],
+      "buildOptions" : ["unittests", "debugMode", "debugInfo"]
+    },
     {
       "name" : "stdout",
-      "sourceFiles" : ["frontends/d2048_stdout.d"]
+      "targetType" : "executable",
+      "sourceFiles" : ["extra/frontends/d2048_stdout.d"]
     },
     {
       "name": "curses",
+      "targetType" : "executable",
       "dependencies" : {"ncurses" : "~master"},
-      "sourceFiles" : ["frontends/d2048_ncurses.d"]
+      "sourceFiles" : ["extra/frontends/d2048_ncurses.d"]
     },
     {
       "name": "gtk",
-      "dependencies" : {"gtkd" : "~master"},
-      "sourceFiles" : ["frontends/d2048_gtk.d"]
+      "targetType" : "executable",
+      "dependencies" : {"gtk-d:gtkd" : "~master"},
+      "sourceFiles" : ["extra/frontends/d2048_gtk.d"]
     },
     {
       "name": "dallegro",
       "targetType" : "executable",
       "libs" : ["allegro", "allegro_font", "allegro_primitives", "allegro_image"],
       "dependencies" : {"allegro5": "~master"},
-      "sourceFiles" : ["frontends/d2048_allegro.d"]
-
+      "sourceFiles" : ["extra/frontends/d2048_allegro.d"]
+    },
+    {
+      "name" : "GL",
+      "targetType" : "executable",
+      "dependencies" : {"gl3n" : "~master", "derelict-gl3" : "~master"},
+      "sourceFiles" : ["extra/frontends/d2048_allegro.d"]
     }
 
   ]

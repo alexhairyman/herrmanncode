@@ -2,6 +2,7 @@ module d2048;
 import smath = std.math;
 import sio = std.stdio;
 import sconv = std.conv;
+import srand = std.random;
 
 enum Direction : ubyte
 {
@@ -91,12 +92,6 @@ unittest
   
 }
 
-//int GetFaceVal(int i)
-//{
-//  return smath.pow(2,i);
-//}
-//auto GetFaceVal = (int i) => smath.pow(2,i);
-
 auto GetFaceVal = (int i) => (i > 0) ? smath.pow(2,i) : 0;
 auto GetXY = (int[][] intsin, int x, int y) => intsin[intsin.length - 1 - y][x];
 
@@ -126,9 +121,62 @@ unittest
   
 }
 
+enum TileEventType : byte
+{
+  SHIFT, /// just move to an empty space
+  MOVE /// sort of like 'merge'
+}
+
+struct Coordinate
+{
+  int x;
+  int y;
+}
+
+static Coordinate mcoord(int ix, int iy)
+{
+  return Coordinate(ix,iy); // keep an eye on this
+}
+struct TileEvent
+{
+  byte tile_event;
+  Coordinate from;
+  Coordinate to;
+}
+
+struct Randomer
+{
+  // srand
+}
+
+struct EventStack
+{
+  private int length; // don't modify by hand LOL DON'T NEED
+  private TileEvent[] events; // dynamic arrays are glorious
+public:
+  /// push an event
+  void Push(TileEvent te)
+  {
+
+  }
+  
+  /// pop an event
+  TileEvent Pop()
+  {
+
+  }
+  
+  /// peek an event
+  TileEvent Peek()
+  {
+
+  }
+}
+
 struct TileBoard
 {
 
+  uint moves = 0;
   Tile[][] tiles;
   this(i_t sidesize)
   {
@@ -136,19 +184,7 @@ struct TileBoard
     foreach(Tile[] t; tiles)
     {t.length = sidesize;}
   }
-  
-//  Tile[][] tiles = [[0,0,0],[0,0,0],[0,0,0],[0,0,0]];
-//  int[4][4] tiles;
 
-//  static Tile _FromBottomLeft(Tile[4][4] tilesin, int x, int y)
-//  {
-//    return tilesin[tilesin.length - y - 1][x];
-//  }
-//  
-//  static Tile _FromTopLeft(Tile[4][4] tilesin, int x, int y)
-//  {
-//    return tilesin[y][x];
-//  }
   /// Get the biggest X val
   /// $(RED DON'T TRUST QUITE YET)
   @property i_t max_x(){return this.tiles[0].length - 1;}
@@ -159,13 +195,15 @@ struct TileBoard
   
   ref Tile GetTileXY (int x, int y)
   {
-//    return tiles[tiles.length - y - 1][x];
     debug(GetTileXY) sio.writefln("accessing (%d,%d) max_y : %d => %s", x, y, max_y, tiles[max_y - y][x]);
     return tiles[max_y - y][x];
   }
+  
+  ref Tile GetTileXY(Coordinate tilecoord)
+  {
+    return GetTileXY(tilecoord.x, tilecoord.y);
+  }
 
-  
-  
   static Tile[] ShiftLine(Tile[] linein, in Direction d)
   {
     Tile[] line = linein.dup;
@@ -201,7 +239,6 @@ struct TileBoard
   {
   
     Tile[] line = linein.dup;
-//    debug(MoveLine) 
     line = ShiftLine(line, d);
   
     if(d == Direction.UP || d == Direction.RIGHT)
@@ -338,12 +375,11 @@ struct TileBoard
         debug(Move) sio.writefln("moved %(%s,%)", this.GetRow(i));
       }
     }
+    this.moves++;
     
-//    this.tiles = temp.dup;
   } 
 
 }
-
 
 Tile[] FromInts(int[] arrayin)
 {
@@ -370,6 +406,7 @@ Tile[][] FromInts(int[][] arrayin)
   }
   return yup;
 }
+
 unittest
 {
   TileBoard tb1;
@@ -412,5 +449,22 @@ unittest
   WriteChange("RIGHT twice");
   tb1.Move(Direction.DOWN);
   WriteChange("DOWN");
-//  tb1.Shift(Direction.UP);
+}
+
+/// minimalist interface so that game interfaces have a lot of freedom
+interface D2048Game
+{
+public:
+  void ProcessEventStack(EventStack e); /// do anything with the event stack
+  void PlayGame(); /// simple enough right? start the game
+  string GameName(); /// give us the game's name
+  string GameDescription(); /// give us the game's description
+}
+
+version(unittest_main)
+{
+  void main()
+  {
+
+  }
 }

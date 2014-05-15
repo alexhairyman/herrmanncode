@@ -1,0 +1,6 @@
+{
+  "name" : "dubyamltest",
+  "dependencies" : {"dyaml" : "~master"},
+  "targetType" : "executable"
+
+}

@@ -41,28 +41,61 @@ void BeginGame(UIs ui_in)
 {
   action_done = true;
   sio.writeln("running ", ui_in);
+  sio.writeln("PSYCH, Not!!!");
   
 }
 
-string[] commands = ["quit", "up", "right", "down", "left"];
+//string[] commands = ["quit", "up", "right", "down", "left"]; /// Don't need this
+
+void PrintTileBoard(TileBoard inputtb)
+{
+  sio.writefln("%(%s,%)", inputtb.tiles);
+}
+
 
 void BeginStdOutGame()
 {
   TileBoard tb = TileBoard(4);
-
+  
+  sio.writeln("beginning game");
 
   string inputstring;
   bool run = true;
+  
+  bool game_started = false;
   do
   {
     inputstring = GetInput();
+    debug(Game) sio.writeln("got: [", inputstring, "]");
+    switch(inputstring)
+    {
+      case "quit" : run = false; break;
+      case "start" : game_started = true; break;
+      case "up" :
+      case "down" :
+      case "right" :
+      case "left" :
+        if(game_started)
+        {
+          switch (inputstring)
+          {
+            case "up": tb.Move(Direction.UP); break;
+            case "down" : tb.Move(Direction.DOWN); break;
+            case "left" : tb.Move(Direction.LEFT); break;
+            case "right" : tb.Move(Direction.RIGHT); break;
+            default: break;
+          }
+          PrintTileBoard(tb);
+        } else
+        {
+          sio.writeln("No can do, you have to start the game");
+        }
+        break;
+        default: sio.writeln("unrecognized command: [", inputstring, "]"); break;
+    }
     
-    if(inputstring == "quit")
-      run = false;
-    else if(inputstring == "up")
     
-    
-    debug(Game) sio.writeln(inputstring);
+   
   } while (run);
   
 }
@@ -73,20 +106,21 @@ void PrintHelp()
 r"
 Command Line Arguments:
 -h --help : print this help
--b --begin : begin a stdout game
+-b --begin : begin a stdout game nearly done
 -u --ui : select the ui
 
 UIs available:
-NCURSES : an Ncurses UI [NOT_DONE]
-ALLEGRO : an Allegro (openGL graphics library) [NOT_DONE]
-GTK : a GTK+ UI [NOT_DONE]
+NCURSES : an Ncurses UI [NOT DONE]
+ALLEGRO : an Allegro (openGL graphics library) [NOT DONE]
+GTK : a GTK+ UI [NOT DONE]
 
 Commands accepted in stdout version:
 up = move tiles up
 down = move tiles down
 left = move tiles left
 right  = move tiles right
-quit = quit the game";
+quit = quit the game
+start = start a new game";
 
   action_done = true;
   sio.writeln(help);
