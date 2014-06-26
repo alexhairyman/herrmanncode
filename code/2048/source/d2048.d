@@ -3,6 +3,7 @@ import smath = std.math;
 import sio = std.stdio;
 import sconv = std.conv;
 import srand = std.random;
+import sarr = std.array;
 
 enum Direction : ubyte
 {
@@ -14,6 +15,25 @@ enum Direction : ubyte
 
 enum HASVALBIT = 0x80_00_00_00u;
 
+enum ExceptCategory
+{
+  ERROR, /// default value, for when you're lazy
+  EVENTSTACK,
+  EVENT,
+  GAME
+}
+
+class D2048Exception : Exception
+{
+private:
+  ExceptCategory ec_;
+
+public:
+  @property ExceptCategory Category() {return this.ec_;}
+  @property void Category(ExceptCategory ec) {this.ec_ = ec;}
+  
+  this(string msg = "Exception from d2048 library thrown", ExceptionCategory
+}
 alias ptrdiff_t i_t;
 
 //static Tile FromInt(int inval) {Tile t1 = invalt1.value = inval; return t1
@@ -22,41 +42,41 @@ struct Tile
 {
 public:
   int value = 0;
-  
+
   this (int inval) {this.value = inval;}
   @property int intyhere(){return this.value;}
   alias intyhere this;
-  
+
   string toString() {return sconv.to!string(this.value);}
   int opCall() {return value;}
   void opCall(int val) {this.value = val;}
-  
+
   void opOpAssign(string op)(Tile rhs)
   {
     static if(op == "+") { this.value += rhs.value;}
     else if(op == "-") { this.value -= rhs.value;}
   }
-  
+
   void opOpAssign(string op)(int rhs)
   {
     static if(op == "+") {this.value += rhs;}
     else if(op == "-") {this.value -= rhs;}
   }
-  
+
   Tile opBinary(string op)(int rhs)
   {
     static if (op == "+") {return Tile(this.value + rhs);}
     else if(op == "-") {return Tile (this.value - rhs);}
   }
-  
+
   Tile opBinary(string op)(Tile rhs)
   {
     static if (op == "+") {return Tile(this.value + rhs.value);}
     else if(op == "-") {return Tile (this.value - rhs.value);}
   }
-  
+
   void opAssign(int inval) {this.value = inval;}
-  
+
   // return 2^value or 0
   ulong GetFaceValue()
   {
@@ -65,7 +85,7 @@ public:
     else
       return 0;
   }
-  
+
   bool IsPrintable() {return (this.GetFaceValue() > 0) ? true : false;}
 
 }
@@ -89,7 +109,7 @@ unittest
   sio.writeln("t2 += 4: ", t2);
   t2 -= 3;
   sio.writeln("t2 -= 3: ", t2);
-  
+
 }
 
 auto GetFaceVal = (int i) => (i > 0) ? smath.pow(2,i) : 0;
@@ -118,7 +138,7 @@ unittest
       sio.writefln("int(%d,%d) -> %d", x, y, GetXY(ints, x,y) );
     }
   }
-  
+
 }
 
 enum TileEventType : byte
@@ -127,6 +147,7 @@ enum TileEventType : byte
   MOVE /// sort of like 'merge'
 }
 
+alias TET = TileEventType;
 struct Coordinate
 {
   int x;
@@ -139,7 +160,8 @@ static Coordinate mcoord(int ix, int iy)
 }
 struct TileEvent
 {
-  byte tile_event;
+  //this (byte etype, Coordinate f, Coordinate t)
+  TileEventType tile_event;
   Coordinate from;
   Coordinate to;
 }
@@ -149,34 +171,82 @@ struct Randomer
   // srand
 }
 
-struct EventStack
+class EventStack
 {
-  private int length; // don't modify by hand LOL DON'T NEED
-  private TileEvent[] events; // dynamic arrays are glorious
+  
+  public TileEvent[] events_; // dynamic arrays are glorious
+  alias events = events_;
 public:
   /// push an event
   void Push(TileEvent te)
   {
-
+    debug(TE) sio.writeln("length: ", events.length);
+    events.length = events.length +1;
+    debug(TE) sio.writeln("new length: ", events.length);
+    events[$-1] = te;
   }
-  
-  /// pop an event
+
+  /// pop an event, FIFO style
   TileEvent Pop()
   {
-
+    TileEvent te;
+    if(events.length > 0)
+    {
+      debug(TE) sio.writeln("events length: ", events.length);
+      te = events[$-1];
+      debug(TE) sio.writeln("te: ", te);
+      events = events[0..$-1];
+      debug(TE) sio.writeln("new events length: ", events.length);
+    } 
+    else
+    {
+      throw new Exception("there is nothing to pop");
+    }
+    
+    return te;
   }
-  
+
   /// peek an event
   TileEvent Peek()
   {
-
+    if(events.length > 0)
+      return events[$-1];
+    else
+      throw new Exception("there is nothing to peek");
   }
+  @property size_t length() {return events.length;}
+}
+
+unittest
+{
+  sio.writeln("EVENT POPPIN EVEN DROPPIN");
+  EventStack te1;
+  te1.Push(TileEvent(TET.SHIFT, mcoord(0,0), mcoord(2,2)));
+  te1.Push(TileEvent(TET.MOVE, mcoord(2,2 ), mcoord(4,4)));
+  te1.Push(TileEvent(TET.SHIFT, mcoord(3,3), mcoord(1,2)));
+  sio.writeln("added to TileEvents");
+  sio.writeln(te1.Pop());
+  sio.writeln(te1.Pop());
+  sio.writeln(te1.Peek());
+  sio.writeln(te1.Pop());
+
+
+  try
+  {
+    sio.writeln(te1.Pop());
+    sio.writeln("te1 length: ", te1.length);
+  }
+  catch (Exception e)
+  {
+    sio.writeln("got the error we expected while trying to pop te1 with an empty tack, like drinking on a full one... here's the message for proof [", e.msg, "]");
+  }
+  
 }
 
 struct TileBoard
 {
-
-  uint moves = 0;
+  synchronized EventStack current_stack;
+  synchronized uint moves = 0;
   Tile[][] tiles;
   this(i_t sidesize)
   {
@@ -188,17 +258,17 @@ struct TileBoard
   /// Get the biggest X val
   /// $(RED DON'T TRUST QUITE YET)
   @property i_t max_x(){return this.tiles[0].length - 1;}
-  
+
   /// Get the biggest Y val
   /// $(RED DON'T TRUST QUITE YET)
   @property i_t max_y(){return this.tiles.length - 1;}
-  
+
   ref Tile GetTileXY (int x, int y)
   {
     debug(GetTileXY) sio.writefln("accessing (%d,%d) max_y : %d => %s", x, y, max_y, tiles[max_y - y][x]);
     return tiles[max_y - y][x];
   }
-  
+
   ref Tile GetTileXY(Coordinate tilecoord)
   {
     return GetTileXY(tilecoord.x, tilecoord.y);
@@ -216,7 +286,7 @@ struct TileBoard
           line[i+1] = line[i];
           line[i] = 0;
           line = ShiftLine(line, d);
-          
+
         }
       }
     } else if (d == Direction.DOWN || d == Direction.LEFT)
@@ -234,13 +304,13 @@ struct TileBoard
     debug(ShiftLine) sio.writefln("SHIFT d: %s [%(%s,%)] => [%(%s,%)]", d, linein, line);
     return line;
   }
-  
+
   static Tile[] MoveLine(Tile[] linein, in Direction d)
   {
-  
+
     Tile[] line = linein.dup;
     line = ShiftLine(line, d);
-  
+
     if(d == Direction.UP || d == Direction.RIGHT)
     {
       if(d == Direction.UP) line.reverse;
@@ -270,7 +340,7 @@ struct TileBoard
     debug(MoveLine) sio.writefln("MOVE  d: %s [%(%s,%)] => [%(%s,%)]", d, linein, line);
     return line;
   }
-  
+
   unittest
   {
     sio.writeln("Having fun with line shifting");
@@ -283,7 +353,7 @@ struct TileBoard
                   [0,1,1,2],
                   [2,2,1,1],
                   [2,3,3,2]];
-                  
+
     sio.writeln("moving right/up");
     foreach(int[] x; lines)
     {
@@ -297,7 +367,7 @@ struct TileBoard
       sio.writefln("[%(%s,%)] --> [%(%s,%)]", x, MoveLine(FromInts(x), Direction.DOWN));
     }
   }
-  
+
   /// this ought to be interesting
   void SetCol(int x, Tile[] col)
   {
@@ -306,7 +376,7 @@ struct TileBoard
       this.tiles[index][x] = col[col.length - 1 - index];
     }
   }
-  
+
   /// little bit trickier than GetRow
   Tile[] GetCol(int x)
   {
@@ -318,13 +388,13 @@ struct TileBoard
     debug(GetCol) sio.writefln("column = %(%s,%)", temp);
     return temp.dup;
   }
-  
+
   //easy again
   void SetRow(int y, Tile[] row)
   {
     this.tiles[y] = row;
   }
-  
+
   /// Easy!
   Tile[] GetRow(int y)
   {
@@ -351,8 +421,8 @@ struct TileBoard
       }
     }
   }
-  
-  
+
+
   /// move in the specified direction
   void Move(Direction d)
   {
@@ -376,8 +446,8 @@ struct TileBoard
       }
     }
     this.moves++;
-    
-  } 
+
+  }
 
 }
 
@@ -407,7 +477,7 @@ Tile[][] FromInts(int[][] arrayin)
   return yup;
 }
 
-unittest
+void badtest()
 {
   TileBoard tb1;
   int[][][] tileboards = [
@@ -428,7 +498,7 @@ unittest
                [2,1,1,2],
                [2,1,1,3],
                [0,0,0,3]].FromInts();
-               
+
   void WriteChange(string msg, TileBoard inboard = tb1)
   {
     sio.writefln("tiles %s :\n%(%s\n%)", msg, inboard.tiles);
@@ -455,7 +525,8 @@ unittest
 interface D2048Game
 {
 public:
-  void ProcessEventStack(EventStack e); /// do anything with the event stack
+  /** Do something with the event stack, like animating moves and merges */
+  void ProcessEventStack(EventStack e);
   void PlayGame(); /// simple enough right? start the game
   string GameName(); /// give us the game's name
   string GameDescription(); /// give us the game's description

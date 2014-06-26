@@ -2,6 +2,7 @@
   "name" : "d2048",
   "targetType" : "library",
   "sourcePaths" : ["source"],
+  "dependencies" : {"allegro5" : "~master"},
   "configurations" : [
     {
       "name" : "unittest",
@@ -29,7 +30,7 @@
     {
       "name": "dallegro",
       "targetType" : "executable",
-      "libs" : ["allegro", "allegro_font", "allegro_primitives", "allegro_image"],
+      "libs" : ["allegro", "allegro_font", "allegro_primitives", "allegro_image", "allegro_ttf"],
       "dependencies" : {"allegro5": "~master"},
       "sourceFiles" : ["extra/frontends/d2048_allegro.d"]
     },
