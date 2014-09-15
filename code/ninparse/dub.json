@@ -1,0 +1,5 @@
+{
+  "name" : "NinParse",
+  "dependencies" : {"pegged"  : "0.1.0"},
+  "targetType" : "executable"
+}

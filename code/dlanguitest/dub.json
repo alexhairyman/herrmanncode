@@ -1,0 +1,6 @@
+{
+  "name" : "duitest",
+  "dependencies" : {"dlangui" : "~master"},
+  "targetType" : "executable",
+  "sourceFiles" : ["test1.d"]
+}
